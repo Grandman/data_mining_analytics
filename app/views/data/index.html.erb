@@ -1,0 +1,7 @@
+<%= form_tag("/select") do %>
+  <%= label_tag(:email, "Почта:") %>
+  <%= text_field_tag(:email) %>
+  <%= label_tag(:password, "Пароль:") %>
+  <%= text_field_tag(:password) %>
+  <%= submit_tag("Получить данные") %>
+<% end %>
