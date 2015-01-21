@@ -19,10 +19,10 @@ class DataController < ApplicationController
     parsed_json = ActiveSupport::JSON.decode(data_json)
     data_table = GoogleVisualr::DataTable.new
     data_table.new_column('number', 'x')
-    data_table.new_column('number', 'A')
-    data_table.new_column('number', 'B')
-    data_table.new_column('number', 'C')
-    data_table.new_column('number', 'D')
+    data_table.new_column('number', 'Кластер 1')
+    data_table.new_column('number', 'Кластер 2')
+    data_table.new_column('number', 'Кластер 3')
+    data_table.new_column('number', 'Кластер 4')
     data_prepared = parsed_json.map { |item| [item['bounceRate'].to_f, item['avgsessionDuration'].to_f] }
     kmeans = KMeans.new(data_prepared, :centrods => 4, :distance_measure => :euclidean_distance)
     result = kmeans.view
@@ -49,50 +49,51 @@ class DataController < ApplicationController
             })
     s = []
     data_json = data1.to_h['points'].to_json
-    parsed_json = ActiveSupport::JSON.decode(data_json)
-    #s[0] = (parsed_json[0]['visits']+parsed_json[1]['visits']+parsed_json[2]['visits'])/3
-    #parsed_json[1..parsed_json.length].each_with_index do |item, index|
-    #   s[index] = [0.8*item['visits'].to_f+(1-0.8)*s[index.to_i-1], item['source']
-    #end
-    #@data = data_json
-    data_table1 = GoogleVisualr::DataTable.new
-    data_table1.new_column('number', 'x')
-    data_table1.new_column('number', 'x1')
-    data_table1.new_column('number', 'y1')
-    data_table1.new_column('number', 'x2')
-    data_table1.new_column('number', 'y2')
-    #s.each_with_index do |item, index| 
-    #  data_table1.add_row([index, item, nil])
-    #end
-    #parsed_json.each_with_index do |item, index| 
-    #  data_table1.add_row([index, nil, item['visits']])
-    #end
-    @chart1 = GoogleVisualr::Interactive::LineChart.new(data_table1, opts)
+    parsed_json1 = ActiveSupport::JSON.decode(data_json)
+    parsed_json1.sort_by{ |item| item['date'] }
     visits = []
-    #result[0].each do |data_id|
-    #  parsed_json[data_id.to_i].each do |item|
-    #    #data_table1.add_row([item['date'], item['visits'], nil, nil, nil])
-    #    visits << item['visits']
-    #  end 
-    #end 
-    #result[1].each do |data_id|
-    #  parsed_json[data_id].each do |item|
-    #    #data_table1.add_row([item['date'], nil, item['visits'], nil, nil])
-    #  end 
-    #end 
-    #result[2].each do |data_id|
-    #   parsed_json[data_id].each do |item|
-    #    #data_table1.add_row([item['date'], nil, nil, item['visits'], nil])
-    #   end 
-    #end 
-    #result[3].each do |data_id|
-    #  parsed_json[data_id].each do |item|
-    #    #data_table1.add_row([item['date'], nil, nil, nil, item['visits']])
-    #  end 
-    #end 
-    result.each_with_index do |item, index|
-         item.map do |item_2| 
-    @data = visits
+    visits[0] = {}
+    visits[1] = {}
+    visits[2] = {}
+    visits[3] = {}
+    result.each_with_index do |cluster, index|
+      cluster.each do |item|
+        array = parsed_json1.select { |row| row['source'] == parsed_json[item]['source'] }  
+        array.each { |arr| if visits[index][arr['date']].nil? then visits[index][arr['date']] = 0 else visits[index][arr['date']] += arr['visits'].to_i end }   
+      end
+    end
+
+    data_table1 = GoogleVisualr::DataTable.new
+    data_table1.new_column('date', 'x')
+    data_table1.new_column('number', 'Посещения')
+    data_table1.new_column('number', 'Прогноз')
+    max = 0
+    max_index = 0
+    visits.each_with_index do |item, index|
+     if max < item.length
+        max = item.length 
+        max_index = index
+     end
+    end
+    opts   = {
+      :width => 800, :height => 800, :title => "Прогнозирование для кластера #{max_index + 1}",
+      :hAxis => { :title => 'Дата'    },
+      :vAxis => { :title => 'Количество посещений' },
+      :legend => 'yes'
+    
+    }
+    visits[max_index].each do |key, value|
+      data_table1.add_row([Date.parse(key),value, nil]) 
+    end
+    array_of_max_cluster = visits[max_index].collect {|key, value| [key,value]}
+
+    s[0] = (array_of_max_cluster[0][1]+array_of_max_cluster[1][1]+array_of_max_cluster[2][1])/3
+    array_of_max_cluster[0...array_of_max_cluster.length].each_with_index do |item, index|
+      s[index+1] = 0.8*item[1]+(1-0.8)*s[index-1]
+      data_table1.add_row([Date.parse(item[0]), nil, s[index]])
+    end 
+    @chart1 = GoogleVisualr::Interactive::LineChart.new(data_table1, opts)
+    @data = array_of_max_cluster 
   end
   def select_account
     if params[:password].nil? || params[:email].nil?
