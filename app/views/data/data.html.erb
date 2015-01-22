@@ -3,4 +3,15 @@
 <div id='chart'></div>
 <%= render_chart(@chart, 'chart') %>
 <div id='chart1'></div>
+<a href="#" onclick="$('#sources').fadeIn(); return false;">Показать источники кластера</a>
+<div id="sources" hidden='hidden'>
+
+<a href="#" onclick="$('#sources').fadeOut(); return false;">Скрыть источники кластера</a>
+<% @sources.each do |source| %>
+     <%= source %><br>
+     <% end %>
+ </div>
 <%= render_chart(@chart1, 'chart1') %>
+<div style="color:<%= if @increase then 'green' else 'red' end %>; font-weigth:bold;"><%= if @increase then 'Рост' else 'Спад' end %>
+  <br><%= @diff %>
+</div>

@@ -1,5 +1,6 @@
 <%= form_tag('/data') do %>
    <%= select_tag :profile_id, options_from_collection_for_select(@accounts, :profile_id, :title) %>
+   <%= text_field_tag(:months) %>
    <%= hidden_field_tag(:email, @email) %>
    <%= hidden_field_tag(:password, @password) %>
    <%= submit_tag("Рассчитать") %>
